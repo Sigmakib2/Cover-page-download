@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Result PDF Search</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 900px;
+      margin-top: 15vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .logo {
+      font-size: 52px;
+      font-weight: 500;
+      margin-bottom: 26px;
+      letter-spacing: 0.03em;
+      text-align: center;
+    }
+
+    .logo span:nth-child(1) { color: #4285f4; }
+    .logo span:nth-child(2) { color: #ea4335; }
+    .logo span:nth-child(3) { color: #fbbc05; }
+    .logo span:nth-child(4) { color: #4285f4; }
+    .logo span:nth-child(5) { color: #34a853; }
+    .logo span:nth-child(6) { color: #ea4335; }
+
+    .search-wrapper {
+      width: 100%;
+      max-width: 580px;
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-radius: 24px;
+      border: 1px solid #dfe1e5;
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+      padding: 6px 14px;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .search-box:focus-within {
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.38);
+    }
+
+    .search-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      opacity: 0.6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      padding: 6px 0;
+      min-width: 0;
+    }
+
+    .clear-btn {
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0 6px;
+      color: #80868b;
+      display: none;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .search-buttons {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .search-buttons button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: 1px solid #f8f9fa;
+      background: #f8f9fa;
+      font-size: 14px;
+      cursor: pointer;
+      color: #3c4043;
+    }
+
+    .search-buttons button:hover {
+      border-color: #dadce0;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    .status {
+      margin-top: 18px;
+      font-size: 13px;
+      color: #5f6368;
+      min-height: 18px;
+      text-align: center;
+    }
+
+    .status.error {
+      color: #d93025;
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #dfe1e5;
+      border-top: none;
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 4px 6px rgba(32, 33, 36, 0.28);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+
+    .suggestion-item {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .suggestion-item:hover {
+      background: #f1f3f4;
+    }
+
+    .suggestion-name {
+      color: #202124;
+    }
+
+    .suggestion-reg {
+      color: #5f6368;
+      font-size: 12px;
+    }
+
+    .results-container {
+      width: 100%;
+      max-width: 680px;
+      margin-top: 36px;
+    }
+
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 420px;
+    }
+
+    thead {
+      background: #f8f9fa;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 600;
+      color: #5f6368;
+    }
+
+    .download-btn {
+      padding: 6px 10px;
+      border-radius: 16px;
+      border: none;
+      background: #1a73e8;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .download-btn:hover {
+      background: #185abc;
+    }
+
+    /* Popup overlay */
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .popup-overlay.visible {
+      opacity: 1;
+    }
+
+    .popup-box {
+      position: relative;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-box img {
+      max-width: 100%;
+      max-height: 80vh;
+      display: block;
+    }
+
+    .popup-close {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      cursor: pointer;
+      font-size: 20px;
+      color: #444;
+      background: rgba(255,255,255,0.9);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Mobile tweaks */
+    @media (max-width: 600px) {
+      body {
+        align-items: stretch;
+      }
+
+      .page {
+        margin-top: 8vh;
+        padding: 0 12px 24px;
+      }
+
+      .logo {
+        font-size: 34px;
+        margin-bottom: 18px;
+      }
+
+      .search-box {
+        border-radius: 999px;
+        padding: 6px 12px;
+      }
+
+      .search-input {
+        font-size: 14px;
+      }
+
+      .search-buttons {
+        margin-top: 18px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-buttons button {
+        width: 100%;
+        max-width: 260px;
+        margin: 0 auto;
+      }
+
+      .results-container {
+        margin-top: 24px;
+      }
+
+      th, td {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      .download-btn {
+        padding: 5px 8px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="logo">
+      <span>ধ</span><span>রো </span><span>আর </span><span>না</span><span>মা</span><span>ও</span>
+    </div>
+
+    <div class="search-wrapper">
+      <div class="search-box">
+        <div class="search-icon">🔍</div>
+        <input
+          id="searchInput"
+          class="search-input"
+          type="text"
+          placeholder="Search by name or registration number"
+          autocomplete="off"
+        />
+        <div id="clearBtn" class="clear-btn">&times;</div>
+      </div>
+      <div id="suggestions" class="suggestions"></div>
+    </div>
+
+    <div class="search-buttons">
+      <button id="searchBtn">Search PDF</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="results-container">
+      <div class="table-wrapper">
+        <table id="resultsTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Reg No</th>
+              <th>Session</th>
+              <th>PDF</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP OVERLAY -->
+  <div id="popupOverlay" class="popup-overlay">
+    <div class="popup-box">
+      <span id="popupClose" class="popup-close">&times;</span>
+      <!-- your “old days” image -->
+      <img src="popup.png" alt="Download popup" />
+    </div>
+  </div>
+
+  <script>
+    const CSV_FILE = 'students.csv';
+    const PDF_FOLDER = 'pdfs';
+
+    let students = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load CSV
+      fetch(CSV_FILE)
+        .then(r => {
+          if (!r.ok) throw new Error('Cannot load CSV');
+          return r.text();
+        })
+        .then(text => {
+          students = parseCSV(text);
+          setStatus(`Loaded ${students.length} students.`, false);
+        })
+        .catch(err => {
+          console.error(err);
+          setStatus('Failed to load students.csv', true);
+        });
+
+      const input = document.getElementById('searchInput');
+      const searchBtn = document.getElementById('searchBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      input.addEventListener('input', handleInput);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          hideSuggestions();
+          handleSearch();
+        }
+      });
+
+      searchBtn.addEventListener('click', () => {
+        hideSuggestions();
+        handleSearch();
+      });
+
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.style.display = 'none';
+        hideSuggestions();
+        setStatus('', false);
+        renderResults([]);
+      });
+
+      const closeBtn = document.getElementById('popupClose');
+      closeBtn.addEventListener('click', hideDownloadPopup);
+    });
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      const out = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const [name, regNo, session] = line.split(',').map(p => p.trim());
+        out.push({ name, regNo, session });
+      }
+      return out;
+    }
+
+    function handleInput(e) {
+      const query = e.target.value.trim();
+      const clearBtn = document.getElementById('clearBtn');
+      clearBtn.style.display = query ? 'block' : 'none';
+      showSuggestions(query);
+    }
+
+    function showSuggestions(query) {
+      const suggBox = document.getElementById('suggestions');
+      suggBox.innerHTML = '';
+
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        hideSuggestions();
+        return;
+      }
+
+      const matches = students.filter(s =>
+        s.regNo.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q)
+      ).slice(0, 8);
+
+      if (matches.length === 0) {
+        hideSuggestions();
+        return;
+      }
+
+      matches.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <span class="suggestion-name">${s.name}</span>
+          <span class="suggestion-reg">${s.regNo} • ${s.session}</span>
+        `;
+        item.addEventListener('click', () => {
+          const input = document.getElementById('searchInput');
+          input.value = s.regNo;
+          document.getElementById('clearBtn').style.display = 'block';
+          hideSuggestions();
+          handleSearch();
+        });
+        suggBox.appendChild(item);
+      });
+
+      suggBox.style.display = 'block';
+    }
+
+    function hideSuggestions() {
+      document.getElementById('suggestions').style.display = 'none';
+    }
+
+    function handleSearch() {
+      const input = document.getElementById('searchInput');
+      const query = input.value.trim().toLowerCase();
+
+      if (!query) {
+        setStatus('Type a name or registration number.', true);
+        renderResults([]);
+        return;
+      }
+
+      const matches = students.filter(s =>
+        s.regNo.toLowerCase().includes(query) ||
+        s.name.toLowerCase().includes(query)
+      );
+
+      if (matches.length === 0) {
+        setStatus('No matching student found.', true);
+      } else {
+        setStatus(`Found ${matches.length} result(s).`, false);
+      }
+
+      renderResults(matches);
+    }
+
+    function renderResults(rows) {
+      const table = document.getElementById('resultsTable');
+      const tbody = document.getElementById('resultsBody');
+      tbody.innerHTML = '';
+
+      if (rows.length === 0) {
+        table.style.display = 'none';
+        return;
+      }
+
+      rows.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${s.name}</td>
+          <td>${s.regNo}</td>
+          <td>${s.session}</td>
+          <td>
+            <a class="download-btn"
+               href="${PDF_FOLDER}/${s.regNo}.pdf"
+               download
+               onclick="showDownloadPopup()">
+              Download PDF
+            </a>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      table.style.display = 'table';
+    }
+
+    function setStatus(msg, isError) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status' + (isError ? ' error' : '');
+    }
+
+    // === POPUP FUNCTIONS ===
+    function showDownloadPopup() {
+      const overlay = document.getElementById('popupOverlay');
+      overlay.style.display = 'flex';
+      requestAnimationFrame(() => overlay.classList.add('visible'));
+      // stays until user clicks X
+    }
+
+    function hideDownloadPopup() {
+      const overlay = document.getElementById('popupOverlay');
+      if (overlay.style.display === 'none') return;
+      overlay.classList.remove('visible');
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 150);
+    }
+  </script>
+</body>
+</html>
